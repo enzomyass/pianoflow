@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- falling notes -->
+    <path android:fillColor="#22D3FF" android:pathData="M40,30h7v22h-7z" />
+    <path android:fillColor="#2CF5A8" android:pathData="M58,38h7v14h-7z" />
+    <!-- strike line -->
+    <path android:fillColor="#A0F0FF" android:pathData="M30,54h48v2h-48z" />
+    <!-- white keys -->
+    <path android:fillColor="#F2F4F8" android:pathData="M30,57h11v21h-11z" />
+    <path android:fillColor="#F2F4F8" android:pathData="M42.5,57h11v21h-11z" />
+    <path android:fillColor="#F2F4F8" android:pathData="M55,57h11v21h-11z" />
+    <path android:fillColor="#F2F4F8" android:pathData="M67.5,57h10.5v21h-10.5z" />
+    <!-- black keys -->
+    <path android:fillColor="#05060A" android:pathData="M37.5,57h7v12h-7z" />
+    <path android:fillColor="#05060A" android:pathData="M50,57h7v12h-7z" />
+    <path android:fillColor="#05060A" android:pathData="M63.5,57h7v12h-7z" />
+    <!-- lit keys -->
+    <path android:fillColor="#22D3FF" android:pathData="M42.5,69h11v9h-11z" />
+    <path android:fillColor="#2CF5A8" android:pathData="M55,69h11v9h-11z" />
+</vector>
