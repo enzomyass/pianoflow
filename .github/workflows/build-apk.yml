@@ -88,6 +88,11 @@ jobs:
           npx cap sync android
           echo "sdk.dir=$ANDROID_SDK_DIR" > android/local.properties
 
+      - name: Use the app's fixed signing key (so updates install over the old version)
+        run: |
+          mkdir -p ~/.android
+          cp native/android/debug.keystore ~/.android/debug.keystore
+
       - name: Assemble debug APK
         working-directory: android
         run: |
