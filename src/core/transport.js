@@ -46,7 +46,7 @@ export class Transport {
   }
 
   _compute(realNow) {
-    if (!this.playing) return this.anchorSong;
+    if (!this.playing || realNow < this.anchorReal) return this.anchorSong;
     const raw = this.anchorSong + (realNow - this.anchorReal) * this.rate;
     if (raw >= this.hold) {
       this.held = true;
@@ -104,6 +104,16 @@ export class Transport {
     if (this.playing) return;
     this.anchorReal = this._realNow();
     this.anchorSong = this.songTime;
+    this.playing = true;
+  }
+
+  /**
+   * Starts playback at a future real-clock time (count-in). Until then the
+   * playhead stays where it is.
+   */
+  playAt(realTime) {
+    this.anchorSong = this.songTime;
+    this.anchorReal = Math.max(realTime, this._realNow());
     this.playing = true;
   }
 

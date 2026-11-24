@@ -49,6 +49,7 @@ function findHeaderOffset(b) {
 function parseTrack(b, start, end, index) {
   const notes = [];
   const tempos = [];
+  const timeSigs = [];
   const open = new Map(); // (channel << 7 | pitch) -> array of {tick, vel}
   let name = '';
   let p = start;
@@ -96,6 +97,8 @@ function parseTrack(b, start, end, index) {
         if (type === 0x51 && len === 3) {
           const uspq = (b[dataStart] << 16) | (b[dataStart + 1] << 8) | b[dataStart + 2];
           if (uspq > 0) tempos.push({ tick, uspq });
+        } else if (type === 0x58 && len >= 2) {
+          timeSigs.push({ tick, num: b[dataStart] || 4, den: Math.pow(2, b[dataStart + 1]) || 4 });
         } else if ((type === 0x03 || type === 0x04) && !name) {
           name = readStr(b, dataStart, len).replace(/\0/g, '').trim();
         } else if (type === 0x2f) {
@@ -142,7 +145,7 @@ function parseTrack(b, start, end, index) {
       notes.push({ channel: key >> 7, pitch: key & 0x7f, velocity: on.vel, startTick: on.tick, endTick: Math.max(endTick, on.tick + 1) });
     }
   }
-  return { index, name, notes, tempos, endTick };
+  return { index, name, notes, tempos, timeSigs, endTick };
 }
 
 /** Converts ticks to seconds across a tempo map. */
@@ -247,7 +250,12 @@ export function parseMidi(input) {
   });
 
   const tempos = tempoMap.ticks.map((tick, i) => ({ time: tempoMap.secs[i], bpm: tempoMap.bpm[i] }));
-  return { format, division, ppq: tempoMap.ppq, tracks, tempos, duration, tempoMap };
+  const sigs = [];
+  for (const t of rawTracks) for (const ts of t.timeSigs) sigs.push(ts);
+  sigs.sort((a, c) => a.tick - c.tick);
+  if (!sigs.length || sigs[0].tick !== 0) sigs.unshift({ tick: 0, num: 4, den: 4 });
+  const timeSigs = sigs.map((ts) => ({ tick: ts.tick, time: tempoMap.toSeconds(ts.tick), num: ts.num, den: ts.den }));
+  return { format, division, ppq: tempoMap.ppq, tracks, tempos, timeSigs, duration, tempoMap };
 }
 
 // ---------------------------------------------------------------------------

@@ -33,6 +33,28 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Bundle recorded grand piano (Salamander Grand Piano, CC BY 3.0)
+        run: |
+          mkdir -p public/samples/piano
+          cd public/samples/piano
+          ok=0
+          for oct in 0 1 2 3 4 5 6 7 8; do
+            for n in C Ds Fs A; do
+              f="${n}${oct}.mp3"
+              case "$f" in A0.mp3|C8.mp3) ;; *0.mp3|Ds8.mp3|Fs8.mp3|A8.mp3) continue ;; esac
+              for base in "https://tonejs.github.io/audio/salamander" "https://raw.githubusercontent.com/Tonejs/audio/master/salamander"; do
+                if curl -fsSL --retry 3 --retry-delay 2 -o "$f" "$base/$f" && [ -s "$f" ]; then ok=$((ok+1)); break; fi
+                rm -f "$f"
+              done
+            done
+          done
+          ls -la
+          if [ "$ok" -lt 30 ]; then
+            echo "::warning title=Piano samples::Only $ok/30 grand piano samples downloaded - the app will use the synthesized piano for missing ones."
+          else
+            echo "::notice title=Piano samples::All $ok grand piano samples bundled ($(du -sh . | cut -f1))."
+          fi
+
       - name: Build web bundle (Vite)
         run: npm run build
 
@@ -40,6 +62,7 @@ jobs:
         run: |
           test -f dist/index.html
           ls dist/assets/*.js dist/assets/*.css
+          echo "::notice title=Bundle::$(ls dist/samples/piano 2>/dev/null | wc -l) piano samples in dist, JS $(du -ck dist/assets/*.js | tail -1 | cut -f1) KB"
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
@@ -75,6 +98,7 @@ jobs:
         run: |
           mkdir -p out
           cp android/app/build/outputs/apk/debug/app-debug.apk "out/PianoFlow-debug-${GITHUB_SHA::7}.apk"
+          echo "::notice title=APK::PianoFlow-debug-${GITHUB_SHA::7}.apk built ($(du -h out/*.apk | cut -f1)), samples inside: $(unzip -l out/*.apk | grep -c 'samples/piano/.*mp3')"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

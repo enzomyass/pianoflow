@@ -18,6 +18,8 @@ import { MidiStreamParser } from '../core/midi-stream.js';
 
 const UsbMidi = registerPlugin('UsbMidi');
 const LAST_BLE_KEY = 'pianoflow.lastBleDevice';
+const NOT_MIDI = (name) =>
+  '“' + name + '” does not send piano keys over Bluetooth (it may only be its speaker/audio connection). Use a USB cable instead.';
 
 export class MidiInput {
   /**
@@ -48,6 +50,7 @@ export class MidiInput {
     if (hi === 0x90 && d2 > 0) this.h.onNoteOn(d1, d2);
     else if (hi === 0x80 || hi === 0x90) this.h.onNoteOff(d1);
     else if (hi === 0xb0 && (d1 === 123 || d1 === 120)) this.h.onAllOff();
+    else if (hi === 0xb0 && d1 === 64 && this.h.onSustain) this.h.onSustain(d2 >= 64);
   }
 
   get bleSupported() {
@@ -56,8 +59,13 @@ export class MidiInput {
 
   // ---------------------------------------------------------------- BLE ----
 
-  async connectBluetooth() {
+  /**
+   * @param {{scanAll?: boolean}} [opts] scanAll lists every nearby Bluetooth LE
+   *   device, for pianos that do not advertise the MIDI service.
+   */
+  async connectBluetooth(opts = {}) {
     this.userDisconnected = false;
+    this.scanAll = !!opts.scanAll;
     if (this.native) return this._connectNativeBle();
     if (globalThis.navigator && navigator.bluetooth) return this._connectWebBle();
     throw new Error('Bluetooth MIDI is not available on this device/browser.');
@@ -85,10 +93,9 @@ export class MidiInput {
     let deviceId = knownId;
     let name = this.bleName;
     if (!deviceId) {
-      const device = await BleClient.requestDevice({
-        services: [BLE_MIDI_SERVICE],
-        optionalServices: [BLE_MIDI_SERVICE],
-      });
+      const device = await BleClient.requestDevice(
+        this.scanAll ? { optionalServices: [BLE_MIDI_SERVICE] } : { services: [BLE_MIDI_SERVICE], optionalServices: [BLE_MIDI_SERVICE] },
+      );
       deviceId = device.deviceId;
       name = device.name || 'Bluetooth piano';
     }
@@ -100,6 +107,22 @@ export class MidiInput {
       }
     } catch (_) {
       /* optional */
+    }
+    if (typeof BleClient.getServices === 'function') {
+      let services = [];
+      try {
+        services = await BleClient.getServices(deviceId);
+      } catch (_) {
+        services = null;
+      }
+      if (services && !services.some((sv) => String(sv.uuid).toLowerCase() === BLE_MIDI_SERVICE)) {
+        try {
+          await BleClient.disconnect(deviceId);
+        } catch (_) {
+          /* ignore */
+        }
+        throw new Error(NOT_MIDI(name));
+      }
     }
     this.bleParser.reset();
     await BleClient.startNotifications(deviceId, BLE_MIDI_SERVICE, BLE_MIDI_CHARACTERISTIC, (value) => this.bleParser.parse(value));
@@ -115,10 +138,11 @@ export class MidiInput {
   }
 
   async _connectWebBle() {
-    const device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [BLE_MIDI_SERVICE] }],
-      optionalServices: [BLE_MIDI_SERVICE],
-    });
+    const device = await navigator.bluetooth.requestDevice(
+      this.scanAll
+        ? { acceptAllDevices: true, optionalServices: [BLE_MIDI_SERVICE] }
+        : { filters: [{ services: [BLE_MIDI_SERVICE] }], optionalServices: [BLE_MIDI_SERVICE] },
+    );
     this.webBleDevice = device;
     device.addEventListener('gattserverdisconnected', () => this._onBleDisconnected());
     await this._webBleAttach(device);
@@ -129,7 +153,13 @@ export class MidiInput {
     const name = device.name || 'Bluetooth piano';
     this.h.onStatus('Connecting to ' + name + '…', 'busy');
     const server = await device.gatt.connect();
-    const service = await server.getPrimaryService(BLE_MIDI_SERVICE);
+    let service;
+    try {
+      service = await server.getPrimaryService(BLE_MIDI_SERVICE);
+    } catch (_) {
+      server.disconnect();
+      throw new Error(NOT_MIDI(name));
+    }
     const ch = await service.getCharacteristic(BLE_MIDI_CHARACTERISTIC);
     if (this.webBleChar) this.webBleChar.removeEventListener('characteristicvaluechanged', this._onWebBleValue);
     this.webBleChar = ch;

@@ -31,6 +31,16 @@ The debug APK is signed with a debug key. It installs fine by sideloading; it is
 
 Track 1 / right hand = cyan, track 2 / left hand = mint, other tracks = violet accompaniment.
 
+## What's new in 2.0
+
+- **7 themes**: Neon Night, Candy Cane (striped notes, letter badges, confetti), Midnight Gold, Sakura Dusk, Ocean Deep, Synthwave, Paper Classic. Settings → Theme.
+- **10 sounds**: real recorded Grand Piano (Salamander Grand Piano by Alexander Holm, CC BY 3.0, bundled at build time), Bright Piano, Electric Piano, Organ, Strings, Harpsichord, Music Box, Vibraphone, Synth Lead, Warm Pad.
+- **Practice** panel: loop A–B, memorize mode (Fade / Ghost / Hidden, optional auto-hide after clean loops), speed trainer, metronome + count-in, step-by-step tutor, record & play back.
+- **MP3 / MP4 → piano**: Songs → "MP3 / MP4 → piano". On-device transcription (no internet). Best on solo piano covers.
+- **Connect menu**: Bluetooth MIDI, "Show all Bluetooth devices" (for pianos that hide the MIDI service), USB cable. Clear message when a device is only a Bluetooth *speaker*.
+- **Bluetooth speaker delay** compensation (Settings) for when the piano's speaker plays the tablet's sound.
+- Sustain pedal (CC64), combo counter, sparkle effects, progress card (streak, practice time, best score per song).
+
 ## Architecture
 
 ```

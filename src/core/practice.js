@@ -47,6 +47,9 @@ export class PracticeEngine {
     this.hits = 0;
     this.misses = 0;
     this.wrong = 0;
+    this.combo = 0; // consecutive correct notes
+    this.bestCombo = 0;
+    this.trouble = new Uint16Array(128); // per pitch: missed, or expected while a wrong key was hit
     this.version = 0; // bumps whenever stats change (cheap DOM dirty check)
   }
 
@@ -115,6 +118,9 @@ export class PracticeEngine {
       this.hits = 0;
       this.misses = 0;
       this.wrong = 0;
+      this.combo = 0;
+      this.bestCombo = 0;
+      this.trouble.fill(0);
     }
     this.version++;
   }
@@ -146,6 +152,8 @@ export class PracticeEngine {
       if (this.state[i] === NOTE_PENDING && this.isRequired(i) && !this.waitMode) {
         this.state[i] = NOTE_MISSED;
         this.misses++;
+        this.combo = 0;
+        this.trouble[s.pitch[i]]++;
         this.version++;
       }
       this.missCursor++;
@@ -192,15 +200,19 @@ export class PracticeEngine {
           if (s.pitch[i] === pitch && this.state[i] === NOTE_PENDING && this.isRequired(i)) {
             this.state[i] = NOTE_HIT;
             this.hits++;
+            this.combo++;
           }
         }
         kind = s.hand[best] === HAND_LEFT ? KEY_HIT_LEFT : KEY_HIT_RIGHT;
+        if (this.combo > this.bestCombo) this.bestCombo = this.combo;
         while (this.waitIdx < this.groupCount && this.groupComplete(this.waitIdx)) this.waitIdx++;
       } else if (this._isSounding(pitch, songTime, win)) {
         kind = KEY_NEUTRAL; // re-striking a note that is part of the music right now
       } else {
         kind = KEY_WRONG;
         this.wrong++;
+        this.combo = 0;
+        for (let q = 21; q <= 108; q++) if (this.expected[q] !== 0) this.trouble[q]++;
       }
       this.version++;
     }
@@ -239,6 +251,27 @@ export class PracticeEngine {
         this.flashLevel[p] = v;
       }
     }
+  }
+
+  /** Snapshot of counters, used to score one loop pass / tutor pass. */
+  snapshot(out) {
+    out.hits = this.hits;
+    out.misses = this.misses;
+    out.wrong = this.wrong;
+    return out;
+  }
+
+  /** Pitch with the most trouble since the last stats reset, or -1. */
+  worstPitch() {
+    let best = -1;
+    let n = 0;
+    for (let q = 21; q <= 108; q++) {
+      if (this.trouble[q] > n) {
+        n = this.trouble[q];
+        best = q;
+      }
+    }
+    return best;
   }
 
   accuracy() {

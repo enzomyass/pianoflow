@@ -1,7 +1,7 @@
 {
   "name": "pianoflow",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Offline Synthesia-style piano trainer for Android tablets (BLE MIDI, USB MIDI, wait mode, mistake detection).",
   "type": "module",
   "scripts": {

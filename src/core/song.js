@@ -96,3 +96,63 @@ export function buildSong(parsed, name) {
   }
   return song;
 }
+
+/**
+ * Metronome beat grid from the tempo map and time signatures.
+ * @returns {{time: Float64Array, accent: Uint8Array, count: number}}
+ */
+export function buildBeatGrid(parsed, duration) {
+  const times = [];
+  const accents = [];
+  const end = duration + 0.001;
+  if (!parsed.ppq) {
+    for (let t = 0, i = 0; t <= end; t += 0.5, i++) {
+      times.push(t);
+      accents.push(i % 4 === 0 ? 1 : 0);
+    }
+  } else {
+    const sigs = parsed.timeSigs && parsed.timeSigs.length ? parsed.timeSigs : [{ tick: 0, num: 4, den: 4 }];
+    let si = 0;
+    let tick = 0;
+    let beatInBar = 0;
+    for (let guard = 0; guard < 200000; guard++) {
+      while (si + 1 < sigs.length && sigs[si + 1].tick <= tick) {
+        si++;
+        beatInBar = 0;
+      }
+      const sig = sigs[si];
+      const t = parsed.tempoMap.toSeconds(tick);
+      if (t > end) break;
+      times.push(t);
+      accents.push(beatInBar === 0 ? 1 : 0);
+      tick += Math.max(1, Math.round((parsed.ppq * 4) / sig.den));
+      beatInBar = (beatInBar + 1) % Math.max(1, sig.num);
+    }
+  }
+  return { time: Float64Array.from(times), accent: Uint8Array.from(accents), count: times.length };
+}
+
+/** Builds a song-like object from recorded notes [{pitch,start,end,velocity}] (take replay). */
+export function buildTakeSong(notes) {
+  const sorted = notes.slice().sort((a, b) => a.start - b.start);
+  const n = sorted.length;
+  const s = {
+    count: n,
+    start: new Float64Array(n),
+    end: new Float64Array(n),
+    pitch: new Uint8Array(n),
+    velocity: new Uint8Array(n),
+    hand: new Uint8Array(n),
+    inRange: new Uint8Array(n).fill(1),
+    maxDur: 0,
+  };
+  for (let i = 0; i < n; i++) {
+    const x = sorted[i];
+    s.start[i] = x.start;
+    s.end[i] = Math.max(x.end, x.start + 0.03);
+    s.pitch[i] = x.pitch;
+    s.velocity[i] = x.velocity;
+    if (s.end[i] - s.start[i] > s.maxDur) s.maxDur = s.end[i] - s.start[i];
+  }
+  return s;
+}

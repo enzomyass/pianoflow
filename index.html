@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#0c0e14" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="dark light" />
     <title>PianoFlow</title>
   </head>
   <body>
@@ -54,22 +54,28 @@
             </button>
           </div>
 
-          <div class="stats" title="Accuracy · wrong notes">
+          <div class="stats" title="Accuracy · wrong notes · combo">
             <span class="stat"><b id="statAcc">—</b><i>accuracy</i></span>
             <span class="stat wrong"><b id="statWrong">0</b><i>wrong</i></span>
+            <span class="stat combo"><b id="statCombo">0</b><i>combo</i></span>
+            <span class="pedal" id="pedal" title="Sustain pedal">PED</span>
           </div>
 
           <div class="spacer"></div>
 
-          <button class="connect-btn" id="btnConnect" data-state="idle" title="Connect a Bluetooth MIDI piano">
+          <button class="toggle" id="btnPractice" aria-pressed="false" title="Practice tools: loop, memorize, tutor, metronome">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h11M4 17h7" /><path d="M17 4l3 3-3 3" /><path d="M13 14l3 3-3 3" /></svg>
+            <span>Practice</span>
+          </button>
+          <button class="icon-btn rec-btn" id="btnRecord" title="Record yourself" aria-label="Record" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6.5" /></svg>
+          </button>
+          <button class="connect-btn" id="btnConnect" data-state="idle" title="Connect your piano">
             <span class="dot"></span>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10-5 5V2l5 5L7 17" /></svg>
             <span id="connLabel">Connect Piano</span>
           </button>
-          <button class="icon-btn" id="btnUsb" title="Use a USB-C MIDI cable" aria-label="USB MIDI">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v14" /><circle cx="12" cy="19.5" r="2" /><path d="M12 8l-4 3v2M12 11l4-3V6" /><rect x="14.5" y="4" width="3" height="2.5" /><circle cx="8" cy="14" r="1.4" /></svg>
-          </button>
-          <button class="icon-btn" id="btnSettings" title="Settings" aria-label="Settings">
+          <button class="icon-btn" id="btnSettings" title="Settings &amp; themes" aria-label="Settings">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" /></svg>
           </button>
         </div>
@@ -77,10 +83,31 @@
       </header>
 
       <div class="wait-pill" id="waitPill" hidden>Waiting for you — play the glowing keys</div>
-      <div class="status-chip" id="statusChip" hidden></div>
+      <div class="rec-pill" id="recPill" hidden>● Recording</div>
+
+      <!-- Tutor coach -->
+      <div class="coach" id="coach" hidden>
+        <div class="coach-head">
+          <span class="coach-avatar">🎹</span>
+          <div class="coach-titles">
+            <b id="coachStage">Listen</b>
+            <span id="coachStep">Phrase 1 of 4 · step 1 of 5</span>
+          </div>
+          <div class="coach-actions">
+            <button class="chip" id="coachRetry">Retry</button>
+            <button class="chip" id="coachSkip">Skip</button>
+            <button class="chip danger" id="coachStop">End lesson</button>
+          </div>
+        </div>
+        <div class="coach-msg" id="coachMsg">Let’s learn this step by step.</div>
+        <div class="coach-bar"><i id="coachBar"></i></div>
+      </div>
+
+      <div class="countin" id="countIn" hidden></div>
 
       <div class="scrim" id="scrim" hidden></div>
 
+      <!-- Songs drawer -->
       <aside class="drawer" id="drawer" aria-label="Songs" aria-hidden="true">
         <div class="drawer-head">
           <h2>Songs</h2>
@@ -88,11 +115,23 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </div>
-        <button class="import-btn" id="btnImport">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M4 20h16" /></svg>
-          Import .mid file
-        </button>
+        <div class="progress-card" id="progressCard">
+          <div><b id="pcStreak">0</b><span>day streak 🔥</span></div>
+          <div><b id="pcToday">0m</b><span>today</span></div>
+          <div><b id="pcTotal">0m</b><span>total practice</span></div>
+        </div>
+        <div class="import-row">
+          <button class="import-btn" id="btnImport">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12M6 10l6 6 6-6M4 20h16" /></svg>
+            Import .mid
+          </button>
+          <button class="import-btn alt" id="btnImportAudio" title="Turn an MP3/MP4 (e.g. a piano cover) into falling notes">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h2l2-6 4 14 3-10 2 4h5" /></svg>
+            MP3 / MP4 → piano
+          </button>
+        </div>
         <input type="file" id="fileInput" accept=".mid,.midi,.kar,.rmi,audio/midi,audio/x-midi,audio/mid" hidden />
+        <input type="file" id="audioInput" accept="audio/*,video/*,.mp3,.mp4,.m4a,.wav,.ogg,.aac,.webm" hidden />
         <ul class="song-list" id="songList"></ul>
         <p class="drawer-foot">Songs are saved on this tablet and work with no internet. Drag a .mid file anywhere to import.</p>
         <div class="legend">
@@ -103,15 +142,127 @@
         </div>
       </aside>
 
-      <div class="settings" id="settings" hidden>
-        <label class="row"><span>Synth volume</span><input type="range" id="volume" min="0" max="1" step="0.05" /></label>
-        <label class="row"><span>Note speed</span><input type="range" id="speed" min="1.5" max="6" step="0.25" /></label>
-        <label class="row check"><input type="checkbox" id="monitor" /><span>Play my piano's notes through the tablet</span></label>
-        <label class="row check"><input type="checkbox" id="accomp" /><span>Play accompaniment tracks</span></label>
-        <p class="hint">Keyboard: A–L play notes · Space play/pause · ← → seek · W wait mode</p>
+      <!-- Connect menu -->
+      <div class="panel connect-panel" id="connectPanel" hidden>
+        <h3>Connect your piano</h3>
+        <button class="menu-btn" id="btnBle">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10-5 5V2l5 5L7 17" /></svg>
+          <span><b>Bluetooth MIDI piano</b><small>Pianos that send keys over Bluetooth</small></span>
+        </button>
+        <button class="menu-btn" id="btnBleAll">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M5 12a7 7 0 0 1 14 0M2 12a10 10 0 0 1 20 0" /></svg>
+          <span><b>Show all Bluetooth devices</b><small>If your piano doesn’t appear above</small></span>
+        </button>
+        <button class="menu-btn" id="btnUsb">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v14" /><circle cx="12" cy="19.5" r="2" /><path d="M12 8l-4 3v2M12 11l4-3V6" /></svg>
+          <span><b>USB cable</b><small>Piano’s USB port → USB-C on the tablet</small></span>
+        </button>
+        <button class="menu-btn danger" id="btnDisconnect" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          <span><b>Disconnect Bluetooth piano</b></span>
+        </button>
+        <p class="hint">“PIANO AUDIO” in Android Bluetooth settings is the piano’s <b>speaker</b> — it plays the tablet’s sound but doesn’t send keys. For key presses use Bluetooth MIDI or a USB cable.</p>
       </div>
 
-      <div class="drop" id="drop" hidden><div>Drop a .mid file to import</div></div>
+      <!-- Practice tools -->
+      <div class="panel practice-panel" id="practicePanel" hidden>
+        <section>
+          <h3>Loop a part</h3>
+          <div class="row-btns">
+            <button class="chip" id="btnLoopA">Set A</button>
+            <button class="chip" id="btnLoopB">Set B</button>
+            <button class="chip toggle-chip" id="btnLoopOn" aria-pressed="false">Loop</button>
+            <button class="chip" id="btnLoopClear">Clear</button>
+          </div>
+          <p class="sub" id="loopInfo">Pause where the part starts → Set A, where it ends → Set B.</p>
+        </section>
+        <section>
+          <h3>Memorize</h3>
+          <div class="seg" id="segMemorize">
+            <button data-v="0">Off</button><button data-v="1">Fade</button><button data-v="2">Ghost</button><button data-v="3">Hidden</button>
+          </div>
+          <label class="check"><input type="checkbox" id="memAuto" /><span>Hide more after each clean loop</span></label>
+        </section>
+        <section>
+          <h3>Speed trainer</h3>
+          <label class="check"><input type="checkbox" id="trainerOn" /><span>Start slow, speed up after each clean loop</span></label>
+          <div class="seg small" id="segTrainerStart">
+            <button data-v="0.5">from 50%</button><button data-v="0.6">60%</button><button data-v="0.7">70%</button><button data-v="0.8">80%</button>
+          </div>
+        </section>
+        <section>
+          <h3>Metronome</h3>
+          <div class="row-btns">
+            <button class="chip toggle-chip" id="btnMetro" aria-pressed="false">Metronome</button>
+            <button class="chip toggle-chip" id="btnCountIn" aria-pressed="false">Count-in</button>
+            <input type="range" id="metroVol" min="0" max="1" step="0.05" aria-label="Metronome volume" />
+          </div>
+        </section>
+        <section>
+          <h3>Step-by-step tutor</h3>
+          <button class="import-btn" id="btnTutor">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V6a2 2 0 0 1 2-2h12v15H6a2 2 0 0 0-2 2" /><path d="M8 8h6M8 12h4" /></svg>
+            Start lesson
+          </button>
+          <p class="sub">Teaches the loop (or the whole song) phrase by phrase: listen, each hand, both hands, then up to speed. No rush.</p>
+        </section>
+        <section id="takeSection" hidden>
+          <h3>My recording</h3>
+          <div class="row-btns">
+            <button class="chip" id="btnPlayTake">▶ Play back</button>
+            <button class="chip" id="btnDeleteTake">Delete</button>
+          </div>
+          <p class="sub" id="takeInfo"></p>
+        </section>
+      </div>
+
+      <!-- Settings -->
+      <div class="panel settings" id="settings" hidden>
+        <section>
+          <h3>Theme</h3>
+          <div class="theme-grid" id="themeGrid"></div>
+        </section>
+        <section>
+          <h3>Sound</h3>
+          <div class="tone-grid" id="toneGrid"></div>
+          <p class="sub" id="sampleState"></p>
+          <label class="row"><span>Volume</span><input type="range" id="volume" min="0" max="1" step="0.05" /></label>
+        </section>
+        <section>
+          <h3>Display</h3>
+          <label class="row"><span>Note speed</span><input type="range" id="speed" min="1.5" max="6" step="0.25" /></label>
+          <div class="row"><span>Note names</span>
+            <div class="seg small" id="segLabels"><button data-v="0">C4</button><button data-v="1">C</button><button data-v="2">Off</button></div>
+          </div>
+          <label class="check"><input type="checkbox" id="effects" /><span>Sparkle effects</span></label>
+        </section>
+        <section>
+          <h3>Bluetooth speaker delay</h3>
+          <div class="row"><span>Compensation</span>
+            <div class="seg small" id="segLatency"><button data-v="auto">Auto</button><button data-v="manual">Manual</button></div>
+          </div>
+          <label class="row"><span id="latencyLabel">Delay 0 ms</span><input type="range" id="latency" min="0" max="400" step="10" /></label>
+          <p class="sub">Playing the sound through your piano’s Bluetooth speaker? If the music sounds late compared to the falling notes, choose Manual and raise this until it lines up (usually 150–250 ms).</p>
+        </section>
+        <section>
+          <h3>Playback</h3>
+          <label class="check"><input type="checkbox" id="monitor" /><span>Play my piano’s notes through the tablet</span></label>
+          <label class="check"><input type="checkbox" id="accomp" /><span>Play accompaniment tracks</span></label>
+        </section>
+        <p class="hint">Keyboard: A–L play notes · Space play/pause · ← → seek · Q wait mode<br />Grand piano samples: Salamander Grand Piano by Alexander Holm (CC BY 3.0).</p>
+      </div>
+
+      <!-- Transcription progress -->
+      <div class="modal" id="txModal" hidden>
+        <div class="modal-card">
+          <h3 id="txTitle">Turning audio into piano…</h3>
+          <div class="bar"><i id="txBar"></i></div>
+          <p class="sub" id="txInfo">Listening to every note. This runs on your tablet, no internet needed.</p>
+          <button class="chip" id="txCancel">Cancel</button>
+        </div>
+      </div>
+
+      <div class="drop" id="drop" hidden><div>Drop a .mid or audio file to import</div></div>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
       <div class="rotate"><div>Rotate your tablet to landscape</div></div>
     </div>
